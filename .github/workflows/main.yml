@@ -31,7 +31,7 @@ jobs:
         -s EXIT_RUNTIME=1 \
         -s FORCE_FILESYSTEM=0 \
         -s NO_EXIT_RUNTIME=1 \
-        --shell-file /home/runner/work/_temp/7630be77-23db-478e-9364-3eafa11f8732/emsdk-main/upstream/emscripten/src/shell.html
+        -s SINGLE_FILE=1
 
     # ビルド済みファイルを成果物として保存
     - name: Upload Artifacts
