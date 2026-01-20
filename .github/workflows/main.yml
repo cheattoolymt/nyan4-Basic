@@ -1,0 +1,36 @@
+name: Build BASIC Wasm
+
+on:
+  push:
+    branches: [ main ]  # mainブランチにpushした時に実行
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Emscripten
+      uses: mymindstorm/setup-emsdk@v14
+
+    - name: Compile to Wasm
+      run: |
+        emcc basic.c runtime.c \
+        -o index.html \
+        -D SYSTYPE_POSIX \
+        -I . \
+        --preload-file eeprom.dat \
+        -O3 \
+        -s ALLOW_MEMORY_GROWTH=1
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: basic-wasm-build
+        path: |
+          index.html
+          index.js
+          index.wasm
+          index.data
