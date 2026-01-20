@@ -2292,7 +2292,7 @@ void pushloop(name_t* name, token_t t, address_t here, number_t to, number_t ste
 		loopsp++;	
 		return;	
 	} else 
-		error(ELOOP);
+		error(E_BASIC_LOOP);
 }
 
 /* what is the active loop */
@@ -2300,7 +2300,7 @@ bloop_t* activeloop() {
 	if (loopsp>0) {
 		return &loopstack[loopsp-1];
 	} else {
-		error(ELOOP);
+		error(E_BASIC_LOOP);
 		return 0;
 	}
 }
@@ -2309,7 +2309,7 @@ void droploop() {
 	if (loopsp>0) {
 		loopsp--;
 	} else {
-		error(ELOOP);
+		error(E_BASIC_LOOP);
 		return;
 	} 
 }
@@ -5786,7 +5786,7 @@ void xnext(){
 
 /* check if this is really a FOR loop */
 #ifdef HASSTRUCT
-	if (loop->var.token == TWHILE || loop->var.token == TREPEAT) { error(ELOOP); return; }
+	if (loop->var.token == TWHILE || loop->var.token == TREPEAT) { error(E_BASIC_LOOP); return; }
 #endif
 
 /* a variable argument in next clears the for stack 
