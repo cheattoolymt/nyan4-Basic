@@ -1,3 +1,8 @@
+#define ELOOP 19
+#define _ERRNO_H  /* errno.h が読み込まれるのを阻止する呪文 */
+#include <errno.h>
+#undef ELOOP
+#define ELOOP 19
 /*----------------------------------------------------------------
  * Please read this before compiling: 
  *  - Review hardware.h for settings specific hardware settings.
@@ -41,10 +46,7 @@
 /* use long jump for error handling */
 #if USELONGJUMP == 1
 #include "setjmp.h"
-#ifdef ELOOP
-#undef ELOOP  // システム側の ELOOP (40番とか) を一旦消す
-#endif
-#define ELOOP 19 // このプログラム独自の「Loopエラー」として 19番を再定義する
+
 #endif
 
 /* Global BASIC definitions */
