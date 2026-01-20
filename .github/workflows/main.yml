@@ -1,8 +1,14 @@
-name: Build BASIC Wasm
+name: Build and Deploy BASIC Wasm
 
 on:
   push:
     branches: [ main ]  # mainブランチにpushした時に実行
+  workflow_dispatch:      # 手動実行ボタンも追加
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
@@ -19,18 +25,30 @@ jobs:
       run: |
         emcc basic.c runtime.c \
         -o index.html \
+        -U MINGW \
+        -D POSIX \
         -D SYSTYPE_POSIX \
+        -D POSIXTERMINAL \
         -I . \
         --preload-file eeprom.dat \
         -O3 \
-        -s ALLOW_MEMORY_GROWTH=1
+        -s ALLOW_MEMORY_GROWTH=1 \
+        -s EXIT_RUNTIME=1 \
+        -s FORCE_FILESYSTEM=1
 
+    # ビルド済みファイルを成果物として保存
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-pages-artifact@v3
       with:
-        name: basic-wasm-build
-        path: |
-          index.html
-          index.js
-          index.wasm
-          index.data
+        path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
