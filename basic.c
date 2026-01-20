@@ -32,11 +32,6 @@
 #include "hardware.h"
 #include "runtime.h"
 
-#ifdef ELOOP
-#undef ELOOP
-#endif
-#define ELOOP E_BASIC_LOOP
-
 /*
  * the core basic language headers 
  */
@@ -46,6 +41,10 @@
 /* use long jump for error handling */
 #if USELONGJUMP == 1
 #include "setjmp.h"
+#ifdef ELOOP
+#undef ELOOP  // システム側の ELOOP (40番とか) を一旦消す
+#endif
+#define ELOOP 19 // このプログラム独自の「Loopエラー」として 19番を再定義する
 #endif
 
 /* Global BASIC definitions */
@@ -2297,7 +2296,7 @@ void pushloop(name_t* name, token_t t, address_t here, number_t to, number_t ste
 		loopsp++;	
 		return;	
 	} else 
-		error(E_BASIC_LOOP);
+		error(ELOOP);
 }
 
 /* what is the active loop */
@@ -2305,7 +2304,7 @@ bloop_t* activeloop() {
 	if (loopsp>0) {
 		return &loopstack[loopsp-1];
 	} else {
-		error(E_BASIC_LOOP);
+		error(ELOOP);
 		return 0;
 	}
 }
@@ -2314,7 +2313,7 @@ void droploop() {
 	if (loopsp>0) {
 		loopsp--;
 	} else {
-		error(E_BASIC_LOOP);
+		error(ELOOP);
 		return;
 	} 
 }
@@ -5791,7 +5790,7 @@ void xnext(){
 
 /* check if this is really a FOR loop */
 #ifdef HASSTRUCT
-	if (loop->var.token == TWHILE || loop->var.token == TREPEAT) { error(E_BASIC_LOOP); return; }
+	if (loop->var.token == TWHILE || loop->var.token == TREPEAT) { error(ELOOP); return; }
 #endif
 
 /* a variable argument in next clears the for stack 
