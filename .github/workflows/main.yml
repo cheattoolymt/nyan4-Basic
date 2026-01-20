@@ -25,16 +25,13 @@ jobs:
       run: |
         emcc basic.c runtime.c \
         -o index.html \
-        -U MINGW \
-        -D POSIX \
-        -D SYSTYPE_POSIX \
-        -D POSIXTERMINAL \
         -I . \
-        --preload-file eeprom.dat \
         -O3 \
         -s ALLOW_MEMORY_GROWTH=1 \
         -s EXIT_RUNTIME=1 \
-        -s FORCE_FILESYSTEM=1
+        -s FORCE_FILESYSTEM=0 \
+        -s NO_EXIT_RUNTIME=1 \
+        --shell-file /home/runner/work/_temp/7630be77-23db-478e-9364-3eafa11f8732/emsdk-main/upstream/emscripten/src/shell.html
 
     # ビルド済みファイルを成果物として保存
     - name: Upload Artifacts
