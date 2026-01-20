@@ -30,7 +30,8 @@ jobs:
         -s ALLOW_MEMORY_GROWTH=1 \
         -s EXIT_RUNTIME=1 \
         -s FORCE_FILESYSTEM=0 \
-        -s NO_EXIT_RUNTIME=1 \
+        -s INVOKE_RUN=1 \
+        --memory-init-file 0 \
         -s SINGLE_FILE=1
 
     # ビルド済みファイルを成果物として保存
