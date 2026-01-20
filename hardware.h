@@ -25,7 +25,7 @@
  *
  */
 
-#define MINGW
+// #define MINGW ←これをつけてwin buildすれば動きます
 #undef MSDOS
 #undef RASPPI
 #undef POSIX
