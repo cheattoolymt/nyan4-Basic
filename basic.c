@@ -32,6 +32,11 @@
 #include "hardware.h"
 #include "runtime.h"
 
+#ifdef ELOOP
+#undef ELOOP
+#endif
+#define ELOOP E_BASIC_LOOP
+
 /*
  * the core basic language headers 
  */
