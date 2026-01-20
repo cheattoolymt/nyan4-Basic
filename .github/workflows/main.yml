@@ -31,8 +31,8 @@ jobs:
         -s EXIT_RUNTIME=1 \
         -s FORCE_FILESYSTEM=0 \
         -s INVOKE_RUN=1 \
-        --memory-init-file 0 \
         -s SINGLE_FILE=1
+        -s ASYNCIFY=1
 
     # ビルド済みファイルを成果物として保存
     - name: Upload Artifacts
