@@ -23,8 +23,7 @@ jobs:
 
     - name: Compile to Wasm
       run: |
-
-        # -o を basic.js に変更することで、JSとWasm(内蔵)を生成します
+        # JSとWasmを一体化して出力
         emcc basic.c runtime.c \
         -o basic.js \
         -I . \
@@ -34,19 +33,70 @@ jobs:
         -s FORCE_FILESYSTEM=0 \
         -s INVOKE_RUN=1 \
         -s SINGLE_FILE=1 \
-        -s ASYNCIFY=1
+        -s ASYNCIFY=1 \
+        -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
 
-    # 手元に保存したい「JSファイル」をGitHub上にアップロード
     - name: Upload Build for Download
       uses: actions/upload-artifact@v4
       with:
         name: nyan-basic-js-file
         path: basic.js
 
-    # Pages公開用に、最小限の index.html を作成（jsを呼び出すだけ）
+    # 謎の入力ダイアログを阻止し、画面に文字を出すための専用HTMLを作成
     - name: Create index.html for Pages
       run: |
-        echo '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="background:#000;color:#0f0;"><pre id="out"></pre><script src="basic.js"></script></body></html>' > index.html
+        cat << 'EOF' > index.html
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>Nyan BASIC Terminal</title>
+            <style>
+                body { background: #000; color: #0f0; font-family: monospace; padding: 20px; display: flex; flex-direction: column; height: 90vh; }
+                #out { flex-grow: 1; background: #000; color: #0f0; border: 1px solid #333; overflow-y: auto; white-space: pre-wrap; margin-bottom: 10px; padding: 10px; }
+                #in { background: #111; color: #0f0; border: 1px solid #333; padding: 10px; font-family: monospace; outline: none; }
+            </style>
+        </head>
+        <body>
+            <div id="out"></div>
+            <input type="text" id="in" autofocus placeholder="Type BASIC command and press Enter...">
+            <script>
+                const out = document.getElementById('out');
+                const inField = document.getElementById('in');
+
+                // Emscriptenの標準入出力をフック
+                var Module = {
+                    print: (text) => { out.textContent += text + "\n"; out.scrollTop = out.scrollHeight; },
+                    printErr: (text) => { console.error(text); },
+                    // stdin(標準入力)をwindow.promptから、この画面の入力欄に切り替えるための準備
+                    preRun: [function() {
+                        let stdinBuffer = "";
+                        FS.init(() => {
+                            if (stdinBuffer.length === 0) return null;
+                            const char = stdinBuffer.charCodeAt(0);
+                            stdinBuffer = stdinBuffer.slice(1);
+                            return char;
+                        }, null, null);
+                        
+                        window.sendToBasic = function(text) {
+                            stdinBuffer += text + "\n";
+                        };
+                    }]
+                };
+
+                inField.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const cmd = inField.value;
+                        out.textContent += "> " + cmd + "\n";
+                        if (window.sendToBasic) window.sendToBasic(cmd);
+                        inField.value = '';
+                    }
+                });
+            </script>
+            <script src="basic.js"></script>
+        </body>
+        </html>
+        EOF
 
     - name: Upload Artifacts for Pages
       uses: actions/upload-pages-artifact@v3
