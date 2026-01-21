@@ -2,8 +2,8 @@ name: Build and Deploy BASIC Wasm
 
 on:
   push:
-    branches: [ main ]  # mainブランチにpushした時に実行
-  workflow_dispatch:      # 手動実行ボタンも追加
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -23,19 +23,32 @@ jobs:
 
     - name: Compile to Wasm
       run: |
+
+        # -o を basic.js に変更することで、JSとWasm(内蔵)を生成します
         emcc basic.c runtime.c \
-        -o index.html \
+        -o basic.js \
         -I . \
         -O3 \
         -s ALLOW_MEMORY_GROWTH=1 \
         -s EXIT_RUNTIME=1 \
         -s FORCE_FILESYSTEM=0 \
         -s INVOKE_RUN=1 \
-        -s SINGLE_FILE=1
+        -s SINGLE_FILE=1 \
         -s ASYNCIFY=1
 
-    # ビルド済みファイルを成果物として保存
-    - name: Upload Artifacts
+    # 手元に保存したい「JSファイル」をGitHub上にアップロード
+    - name: Upload Build for Download
+      uses: actions/upload-artifact@v4
+      with:
+        name: nyan-basic-js-file
+        path: basic.js
+
+    # Pages公開用に、最小限の index.html を作成（jsを呼び出すだけ）
+    - name: Create index.html for Pages
+      run: |
+        echo '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="background:#000;color:#0f0;"><pre id="out"></pre><script src="basic.js"></script></body></html>' > index.html
+
+    - name: Upload Artifacts for Pages
       uses: actions/upload-pages-artifact@v3
       with:
         path: .
