@@ -30,11 +30,11 @@ jobs:
         -O3 \
         -s ALLOW_MEMORY_GROWTH=1 \
         -s EXIT_RUNTIME=1 \
-        -s FORCE_FILESYSTEM=0 \
+        -s FORCE_FILESYSTEM=1 \
         -s INVOKE_RUN=1 \
         -s SINGLE_FILE=1 \
         -s ASYNCIFY=1 \
-        -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
+        -s EXPORTED_RUNTIME_METHODS='["ccall", "cwrap", "FS"]'
 
     - name: Upload Build for Download
       uses: actions/upload-artifact@v4
@@ -42,7 +42,6 @@ jobs:
         name: nyan-basic-js-file
         path: basic.js
 
-    # 謎の入力ダイアログを阻止し、画面に文字を出すための専用HTMLを作成
     - name: Create index.html for Pages
       run: |
         cat << 'EOF' > index.html
@@ -52,43 +51,48 @@ jobs:
             <meta charset="utf-8">
             <title>Nyan BASIC Terminal</title>
             <style>
-                body { background: #000; color: #0f0; font-family: monospace; padding: 20px; display: flex; flex-direction: column; height: 90vh; }
-                #out { flex-grow: 1; background: #000; color: #0f0; border: 1px solid #333; overflow-y: auto; white-space: pre-wrap; margin-bottom: 10px; padding: 10px; }
-                #in { background: #111; color: #0f0; border: 1px solid #333; padding: 10px; font-family: monospace; outline: none; }
+                body { background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; display: flex; flex-direction: column; height: 95vh; margin: 0; }
+                #out { flex-grow: 1; background: #000; color: #0f0; border: 1px solid #333; overflow-y: auto; white-space: pre-wrap; padding: 10px; font-size: 14px; line-height: 1.2; }
+                #in { background: #111; color: #fff; border: 1px solid #333; padding: 12px; font-family: monospace; font-size: 14px; outline: none; margin-top: 5px; width: 100%; box-sizing: border-box; }
             </style>
         </head>
         <body>
-            <div id="out"></div>
-            <input type="text" id="in" autofocus placeholder="Type BASIC command and press Enter...">
+            <div id="out">--- Nyan BASIC System Loading ---<br></div>
+            <input type="text" id="in" autofocus placeholder="Type command here...">
             <script>
                 const out = document.getElementById('out');
                 const inField = document.getElementById('in');
+                let inputQueue = [];
 
-                // Emscriptenの標準入出力をフック
                 var Module = {
-                    print: (text) => { out.textContent += text + "\n"; out.scrollTop = out.scrollHeight; },
-                    printErr: (text) => { console.error(text); },
-                    // stdin(標準入力)をwindow.promptから、この画面の入力欄に切り替えるための準備
                     preRun: [function() {
-                        let stdinBuffer = "";
-                        FS.init(() => {
-                            if (stdinBuffer.length === 0) return null;
-                            const char = stdinBuffer.charCodeAt(0);
-                            stdinBuffer = stdinBuffer.slice(1);
-                            return char;
-                        }, null, null);
-                        
-                        window.sendToBasic = function(text) {
-                            stdinBuffer += text + "\n";
+                        // 標準入力のハンドリングを定義
+                        Module.stdin = function() {
+                            if (inputQueue.length > 0) {
+                                return inputQueue.shift();
+                            }
+                            return null;
                         };
-                    }]
+                    }],
+                    print: (text) => {
+                        out.textContent += text + "\n";
+                        out.scrollTop = out.scrollHeight;
+                    },
+                    printErr: (text) => console.error(text),
+                    onRuntimeInitialized: () => {
+                        out.textContent += "System Ready.\n";
+                    }
                 };
 
                 inField.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         const cmd = inField.value;
                         out.textContent += "> " + cmd + "\n";
-                        if (window.sendToBasic) window.sendToBasic(cmd);
+                        
+                        // 文字列をASCIIコード配列に変換してキューへ（改行コード含む）
+                        const chars = (cmd + "\n").split("").map(c => c.charCodeAt(0));
+                        inputQueue.push(...chars);
+                        
                         inField.value = '';
                     }
                 });
